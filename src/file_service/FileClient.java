@@ -7,6 +7,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
 public class FileClient {
+
     public static void main(String[] args) throws Exception{
         if (args.length != 2) {
             System.out.println("Syntax: FileClient <ServerIP> <ServerPort>");
@@ -16,12 +17,11 @@ public class FileClient {
 
         String command;
 
+
         do{
             Scanner keyboard = new Scanner(System.in);
             System.out.println("Please type a command: ");
             command = keyboard.nextLine().toLowerCase();
-
-
 
             switch(command) {
                 case "d":
@@ -69,6 +69,9 @@ public class FileClient {
 
 
                 case "g":
+
+
+
                     break;
 
 
@@ -80,6 +83,7 @@ public class FileClient {
                     channel.connect(new InetSocketAddress(args[0], serverPort));
                     channel.write(request);
                     channel.shutdownOutput();
+
 
                     // Read the response from the server
                     ByteBuffer responseBuffer = ByteBuffer.allocate(2500);
@@ -93,23 +97,10 @@ public class FileClient {
                         byteArrayOutputStream.write(bytes);
                         responseBuffer.clear();
                     }
-
                     byte[] responseData = byteArrayOutputStream.toByteArray();
-
                     System.out.println(new String(responseData));
 
                     //System.out.println(responseData.length);
-
-
-                    /*
-                    bytesToRead = responseLength + 1;
-                    statusCode = ByteBuffer.allocate(bytesToRead);
-                    statusCode.flip();
-                    a = new byte[responseLength + 1];
-                    statusCode.get(a);
-                    System.out.println(new String(a));
-
-                     */
                     break;
 
 
@@ -119,10 +110,10 @@ public class FileClient {
                 case "r":
 
                     System.out.println(command);
-                    System.out.println("Please enter the file name: ");
+                    System.out.println("Please enter the file name you want to change: ");
                     String oldFileName = keyboard.nextLine();
 
-                    System.out.println("Please enter the file name: ");
+                    System.out.println("Please enter the file name you want to change to: ");
                     String newFileName = keyboard.nextLine();
 
                     request = ByteBuffer.wrap((command+oldFileName+"\\"+newFileName).getBytes());
@@ -154,4 +145,5 @@ public class FileClient {
         }while(!command.equals("q"));
 
     }
+
 }
