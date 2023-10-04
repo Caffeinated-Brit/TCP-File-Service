@@ -1,5 +1,6 @@
 package file_service;
 import java.io.File;
+import java.io.FileWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -71,7 +72,7 @@ public class FileServer {
 
 
                 // CREATE FILE
-                case 'u':
+                case 'n':
                     System.out.println("2");
                     a = new byte[request.remaining()];
                     request.get(a);
@@ -94,6 +95,47 @@ public class FileServer {
                     serveChannel.close();
                     break;
 
+                case 'u':
+                    System.out.println("5");
+                    a = new byte[request.remaining()];
+                    request.get(a);
+                    fileName = new String(a);
+                    System.out.println(fileName);
+
+
+                    String requestString = new String(a);
+                    int index = requestString.indexOf("\\");
+                    String stringFileName = null;
+                    String fileContents = null;
+                    if (index != -1) {
+                        stringFileName = requestString.substring(0, index);
+                        fileContents = requestString.substring(index + 1);
+
+                        System.out.println(stringFileName);
+                        System.out.println(fileContents);
+                    }
+
+                    file = new File("src\\file_service\\files\\" + stringFileName);
+
+
+                    if (!file.exists()) {
+                        success = file.createNewFile();
+                        FileWriter myWriter = new FileWriter(file);
+                        myWriter.write(fileContents);
+                        myWriter.close();
+                    }
+                    if (success) {
+                        ByteBuffer code = ByteBuffer.wrap("S".getBytes());
+                        serveChannel.write(code);
+                        System.out.println('s');
+                    } else {
+                        ByteBuffer code = ByteBuffer.wrap("F".getBytes());
+                        serveChannel.write(code);
+                        System.out.println('f');
+                    }
+                    serveChannel.close();
+                    break;
+
 
                 // RENAME
                 case 'r':
@@ -101,8 +143,8 @@ public class FileServer {
                     a = new byte[request.remaining()];
                     request.get(a);
 
-                    String requestString = new String(a);
-                    int index = requestString.indexOf("\\");
+                    requestString = new String(a);
+                    index = requestString.indexOf("\\");
                     String oldFileName = null;
                     String newFileName = null;
                     if (index != -1) {

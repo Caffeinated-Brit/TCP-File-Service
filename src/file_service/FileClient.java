@@ -1,6 +1,7 @@
 package file_service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -46,7 +47,7 @@ public class FileClient {
 
 
 
-                case "u":
+                case "n":
                     System.out.println(command);
                     System.out.println("Please enter the file name: ");
                     fileName = keyboard.nextLine();
@@ -66,9 +67,44 @@ public class FileClient {
                     System.out.println(new String(a));
                     break;
 
+                case "u":
+                    System.out.println(command);
+                    System.out.println("Please enter the file name you want to upload: ");
+                    fileName = keyboard.nextLine();
+
+                    File file = new File("src\\file_service\\Upload\\" + fileName);
+
+
+                    Scanner myReader = new Scanner(file);
+                    StringBuilder contents = new StringBuilder();
+                    while (myReader.hasNextLine()) {
+                        String data = myReader.nextLine();
+                        //System.out.println(data);
+                        contents.append(data);
+                    }
+                    myReader.close();
+                    //System.out.println(contents);
+
+
+                    request = ByteBuffer.wrap((command+fileName + "\\" + contents).getBytes());
+                    channel = SocketChannel.open();
+                    channel.connect(new InetSocketAddress(args[0], serverPort));
+                    channel.write(request);
+                    channel.shutdownOutput();
+
+                    bytesToRead = 1;
+                    statusCode = ByteBuffer.allocate(bytesToRead);
+
+                    while((bytesToRead -= channel.read(statusCode)) > 0);
+                    statusCode.flip();
+                    a = new byte[1];
+                    statusCode.get(a);
+                    //System.out.println(new String(a));
+                    break;
 
 
                 case "g":
+
 
 
 
