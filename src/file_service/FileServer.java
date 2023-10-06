@@ -24,7 +24,7 @@ public class FileServer {
             do {
                 numBytes = serveChannel.read(request);
                 //System.out.println(numBytes);
-            } while (numBytes >= 0);
+            } while (request.position() < request.capacity() && numBytes >= 0);
 
             request.flip();
 
@@ -116,6 +116,8 @@ public class FileServer {
                     }
 
                     file = new File("src\\file_service\\files\\" + stringFileName);
+
+                    while
 
 
                     if (!file.exists()) {
