@@ -1,11 +1,15 @@
 package file_service;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
+import java.util.Scanner;
 
 public class FileServer {
     public static void main(String[] args) throws Exception {
@@ -17,7 +21,7 @@ public class FileServer {
         while (true) {
 
             SocketChannel serveChannel = welcomeChannel.accept();
-            ByteBuffer request = ByteBuffer.allocate(2500);
+            ByteBuffer request = ByteBuffer.allocate(2000);
 
             int numBytes = 0;
 
@@ -34,18 +38,15 @@ public class FileServer {
             System.out.println(command);
 
             //
-
             byte[] a = new byte[0];
             byte[] b = new byte[0];
             String fileName = new String(a);
             File file;
             boolean success = false;
-
             //
 
 
             switch (command) {
-
                 // DELETE FILE
                 case 'd':
                     System.out.println("1");
@@ -53,7 +54,7 @@ public class FileServer {
                     request.get(a);
                     fileName = new String(a);
                     System.out.println(fileName);
-                    file = new File("src\\file_service\\files\\" + fileName);
+                    file = new File("src\\file_service\\serverFiles\\" + fileName);
 
                     if (file.exists()) {
                         success = file.delete();
@@ -78,7 +79,7 @@ public class FileServer {
                     request.get(a);
                     fileName = new String(a);
                     System.out.println(fileName);
-                    file = new File("src\\file_service\\files\\" + fileName);
+                    file = new File("src\\file_service\\serverFiles\\" + fileName);
 
                     if (!file.exists()) {
                         success = file.createNewFile();
@@ -95,38 +96,27 @@ public class FileServer {
                     serveChannel.close();
                     break;
 
+                //UPLOAD
                 case 'u':
-                    System.out.println("5");
-                    a = new byte[request.remaining()];
+                    int nameLength = request.getInt();
+                    System.out.println(nameLength);
+                    a = new byte[nameLength];
                     request.get(a);
-                    fileName = new String(a);
-                    System.out.println(fileName);
+                    System.out.println(new String(a));
 
-
-                    String requestString = new String(a);
-                    int index = requestString.indexOf("\\");
-                    String stringFileName = null;
-                    String fileContents = null;
-                    if (index != -1) {
-                        stringFileName = requestString.substring(0, index);
-                        fileContents = requestString.substring(index + 1);
-
-                        System.out.println(stringFileName);
-                        System.out.println(fileContents);
+                    FileOutputStream fs = new FileOutputStream("src\\file_service\\serverFiles\\" + new String(a), true);
+                    FileChannel fc = fs.getChannel();
+                    fc.write(request);
+                    request.clear();
+                    while (serveChannel.read(request) >= 0) {
+                        request.flip();
+                        fc.write(request);
+                        request.clear();
                     }
 
-                    file = new File("src\\file_service\\files\\" + stringFileName);
 
-                    while
-
-
-                    if (!file.exists()) {
-                        success = file.createNewFile();
-                        FileWriter myWriter = new FileWriter(file);
-                        myWriter.write(fileContents);
-                        myWriter.close();
-                    }
-                    if (success) {
+                    file = new File("src\\file_service\\serverFiles\\" + new String(a));
+                    if (file.exists()) {
                         ByteBuffer code = ByteBuffer.wrap("S".getBytes());
                         serveChannel.write(code);
                         System.out.println('s');
@@ -135,6 +125,8 @@ public class FileServer {
                         serveChannel.write(code);
                         System.out.println('f');
                     }
+
+                    fs.close();
                     serveChannel.close();
                     break;
 
@@ -145,8 +137,8 @@ public class FileServer {
                     a = new byte[request.remaining()];
                     request.get(a);
 
-                    requestString = new String(a);
-                    index = requestString.indexOf("\\");
+                    String requestString = new String(a);
+                    int index = requestString.indexOf("\\");
                     String oldFileName = null;
                     String newFileName = null;
                     if (index != -1) {
@@ -157,8 +149,8 @@ public class FileServer {
                         System.out.println(newFileName);
                     }
 
-                    File oldNamefile = new File("src\\file_service\\files\\" + oldFileName);
-                    File newNameFile = new File("src\\file_service\\files\\" + newFileName);
+                    File oldNamefile = new File("src\\file_service\\serverFiles\\" + oldFileName);
+                    File newNameFile = new File("src\\file_service\\serverFiles\\" + newFileName);
 
                     if (oldNamefile.exists()) {
                         success = oldNamefile.renameTo(newNameFile);
@@ -175,6 +167,40 @@ public class FileServer {
                     serveChannel.close();
                     break;
 
+                //DOWNLOAD / GET
+                case 'g':
+                    System.out.println("6");
+                    a = new byte[request.remaining()];
+                    request.get(a);
+                    fileName = new String(a);
+                    System.out.println(fileName);
+                    file = new File("src\\file_service\\serverFiles\\" + fileName);
+
+                    if (file.exists()) {
+                        System.out.println("Found File");
+
+                        Scanner myReader = new Scanner(file);
+                        String data = null;
+                        while (myReader.hasNextLine()) {
+                            data = myReader.nextLine();
+                            //System.out.println(data);
+                        }
+                        myReader.close();
+
+                        String sendFileName = data;
+                        assert sendFileName != null;
+                        ByteBuffer code = ByteBuffer.wrap(sendFileName.getBytes());
+                        while (code.hasRemaining()) {
+                            serveChannel.write(code);
+                        }
+                        System.out.println('s');
+                    }
+
+
+                    serveChannel.shutdownOutput();
+                    serveChannel.close();
+                    break;
+
 
 
                 // LIST FILES
@@ -184,19 +210,15 @@ public class FileServer {
                     request.get(a);
                     fileName = new String(a);
                     System.out.println(fileName);
-                    file = new File("src\\file_service\\files");
+                    file = new File("src\\file_service\\serverFiles");
 
                     if (file.exists()) {
 
 
                         String[] files = file.list();
-
                         System.out.println(Arrays.toString(files));
-
                         String stringFiles = Arrays.toString(files);
-
                         System.out.println(stringFiles);
-
                         ByteBuffer code = ByteBuffer.wrap(stringFiles.getBytes());
                         while (code.hasRemaining()) {
                             serveChannel.write(code);
@@ -206,20 +228,8 @@ public class FileServer {
 
 
                     }
-                    /*
-                    if (success) {
-                        ByteBuffer code = ByteBuffer.wrap("S".getBytes());
-                        serveChannel.write(code);
-                        System.out.println('s');
-                    } else {
-                        ByteBuffer code = ByteBuffer.wrap("F".getBytes());
-                        serveChannel.write(code);
-                        System.out.println('f');
-                    }
-
-                     */
-                    serveChannel.close();
-                    break;
+                serveChannel.close();
+                break;
 
             }
         }
